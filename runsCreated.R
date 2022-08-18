@@ -5,19 +5,21 @@
 
 library(tidyverse)
 library(dplyr)
+library(stringr)
+library(reshape2)
+setwd("/Users/maxclowdus/Desktop/R_Files/Mathletics")
 
 #####################################################################
 
-# First lets start by calculating the runs created (rc) for each MLB team
-# in the 2021 season using Bill James' original equation.
+# First lets start by calculating the runs created (RC) for each MLB team
+# in the 2021 season using Bill James' original, simplest equation.
 
-team_stats <- read.csv("2021_team_stats.csv")
+team_stats <- read.csv("2021_team_stats.csv", stringsAsFactors = FALSE)
 head(team_stats)
 
 team_stats <- team_stats %>%
-  mutate(RC = ((H+BB+HBP+IBB)*TB)/(AB+BB+IBB+HBP),
-         RC_diff = RC-R) %>%
-  arrange(RC)
+  mutate(RC = ((H+BB+HBP)*TB)/(AB+BB+HBP),
+         RC_diff = RC-R)
 
 # What is this complicated formula? Let's think of it like this: 
 # We are multiplying (H+BB+HBP+IBB) by TB / (AB+BB+IBB+HBP).This fraction is 
@@ -26,16 +28,22 @@ team_stats <- team_stats %>%
 # they are advanced. Pretty neat.
 
 # Plotting both results
-team_stats$RC <- factor(team_stats$RC, levels = team_stats$RC)
-ggplot(team_stats, aes(x=Tm, y=RC)) +
-  geom_point()
+team_stats <- team_stats %>%
+  dplyr::select(Tm, R, RC) %>%
+  melt(id.vars = "Tm")
+
+ggplot(team_stats, aes(x=reorder(Tm, value), y=value)) +
+  geom_point(aes(colour = variable)) +
+  xlab("Team") +
+  ylab("Runs Created 2021") +
+  scale_x_discrete(guide = guide_axis(n.dodge=3))
 
 # Calculate mean average deviation for Runs Scored vs prediction
 mad_rc <- (sum(abs(team_stats$RC_diff)) / 30) / mean(team_stats$R)
 
-# On average this simple prediction is off by about 24.6 runs compared to the
+# On average this simple prediction is off by about 28.5 runs compared to the
 # actual runs scored. Since the average runs scored was 733.6, our prediction
-# has an average error of only 3.4%.
+# has an average error of only 3.9%.
 
 #####################################################################
 
@@ -53,10 +61,11 @@ player_stats <- player_stats %>%
                           "Ohtani",
                           "Harper",
                           "Ramirez")) %>%
-  mutate(RC = ((b_total_hits+b_walk+b_hit_by_pitch+b_intent_walk)*b_total_bases)
-         /(b_ab+b_walk+b_hit_by_pitch+b_intent_walk))
+  mutate(RC = ((H+BB+HBP)*TB)/(AB+BB+HBP) )
 
-
+# This RC value gives us the total number of runs created using our formula
+# for the entire season. Now lets look at runs created per game for each of
+# these players.
 
 
 
