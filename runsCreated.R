@@ -14,12 +14,18 @@ setwd("/Users/maxclowdus/Desktop/R_Files/Mathletics")
 # First lets start by calculating the runs created (RC) for each MLB team
 # in the 2021 season using Bill James' original, simplest equation.
 
-team_stats <- read.csv("2021_team_stats.csv", stringsAsFactors = FALSE)
+team_stats <- read.csv("2021_team_stats.csv")
 head(team_stats)
 
 team_stats <- team_stats %>%
   mutate(RC = ((H+BB+HBP)*TB)/(AB+BB+HBP),
-         RC_diff = RC-R)
+         err = abs(RC-R))
+
+# Calculate mean absolute deviation for Runs Scored vs prediction
+mad_rc <- mean(team_stats$err)
+# On average this simple prediction is off by about 28.5 runs compared to the
+# actual runs scored. Since the average runs scored was 733.6, our prediction
+# has an average error of only 3.9%.
 
 # What is this complicated formula? Let's think of it like this: 
 # We are multiplying (H+BB+HBP+IBB) by TB / (AB+BB+IBB+HBP).This fraction is 
@@ -38,12 +44,8 @@ ggplot(team_stats, aes(x=reorder(Tm, value), y=value)) +
   ylab("Runs Created 2021") +
   scale_x_discrete(guide = guide_axis(n.dodge=3))
 
-# Calculate mean average deviation for Runs Scored vs prediction
-mad_rc <- (sum(abs(team_stats$RC_diff)) / 30) / mean(team_stats$R)
-
-# On average this simple prediction is off by about 28.5 runs compared to the
-# actual runs scored. Since the average runs scored was 733.6, our prediction
-# has an average error of only 3.9%.
+# Notice how with this simple formula the RC nearly always underestimates the
+# actual number of runs scored. This will be something to keep our eye on.
 
 #####################################################################
 
@@ -63,9 +65,33 @@ player_stats <- player_stats %>%
                           "Ramirez")) %>%
   mutate(RC = ((H+BB+HBP)*TB)/(AB+BB+HBP) )
 
-# This RC value gives us the total number of runs created using our formula
+# This RC value gives us the total number of runs created, using our formula,
 # for the entire season. Now lets look at runs created per game for each of
 # these players.
+
+# To get RC/G we cannot just divide runs created by 162 because that would
+# not be an accurate representation of the players influence and impact on
+# games throughout the season. Sometime he hits more sometimes he hits less in
+# each game.
+
+# We can, however get the number of outs the player "consumed" during the season.
+# Then we can determine how many runs a player created compared to the number
+# of outs he creates. And since we know the number of outs in a game we can get
+# RC/G.
+
+# Outs is really AB - H - 0.018*AB where the 0.18 comes from a 1.8% chance of 
+# an error. Then we add in additional outs which come from SB, SF, CS, and GIDP.
+# Lets get number of outs for each player:
+
+player_stats <- player_stats %>%
+  mutate(Outs =  0.982*AB-H+GIDP+SF+SB+CS,
+         Games_used = Outs / 27,
+         RC_G = RC/Games_used)
+
+# Note: This stats indicates the number of runs we would expect a team to score
+# if it was made up entirely of the player in question. Which, obviously is 
+# not the case. It is an interesting metric to compare players however.
+
 
 
 
