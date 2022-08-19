@@ -14,12 +14,18 @@ setwd("/Users/maxclowdus/Desktop/R_Files/Mathletics")
 # First lets start by calculating the runs created (RC) for each MLB team
 # in the 2021 season using Bill James' original, simplest equation.
 
-team_stats <- read.csv("2021_team_stats.csv")
+team_stats <- read.csv("11-21_team_stats.csv")
+current_teams <- read.csv("MLB_teams.csv")
 head(team_stats)
 
 team_stats <- team_stats %>%
+  group_by(Team) %>%
+  summarise_if(is.numeric,sum) %>%
+  select(-c("Season")) %>%
   mutate(RC = ((H+BB+HBP)*TB)/(AB+BB+HBP),
          err = abs(RC-R))
+team_stats <- merge(team_stats, current_teams, by="Team")
+
 
 # Calculate mean absolute deviation for Runs Scored vs prediction
 mad_rc <- mean(team_stats$err)
@@ -34,14 +40,14 @@ mad_rc <- mean(team_stats$err)
 # they are advanced. Pretty neat.
 
 # Plotting both results
-team_stats <- team_stats %>%
+team_stats_plot <- team_stats %>%
   dplyr::select(Tm, R, RC) %>%
   melt(id.vars = "Tm")
 
-ggplot(team_stats, aes(x=reorder(Tm, value), y=value)) +
+ggplot(team_stats_plot, aes(x=reorder(Tm, value), y=value)) +
   geom_point(aes(colour = variable)) +
   xlab("Team") +
-  ylab("Runs Created 2021") +
+  ylab("Runs Created 2011-2021") +
   scale_x_discrete(guide = guide_axis(n.dodge=3))
 
 # Notice how with this simple formula the RC nearly always underestimates the
@@ -99,10 +105,10 @@ player_stats <- player_stats %>%
 
 #####################################################################
 
-
+head(team_stats)
 # Using Linear Weights approach
-lw_model <- lm()
-
+lw_model <- lm(R ~ X1B+X2B+X3B+HR+BB+HBP+SB, data = team_stats)
+summary(lw_model)
 
 
 
