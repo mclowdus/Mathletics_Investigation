@@ -47,7 +47,11 @@ ggplot(team_stats, aes(x=reorder(Tm, value), y=value)) +
 # Notice how with this simple formula the RC nearly always underestimates the
 # actual number of runs scored. This will be something to keep our eye on.
 
+
 #####################################################################
+
+
+# Using basic RC formula for players
 
 # Now the discussion turns to evaluating players. How can we use this information
 # to determine the runs created by an individual player and how can we use this
@@ -91,6 +95,19 @@ player_stats <- player_stats %>%
 # Note: This stats indicates the number of runs we would expect a team to score
 # if it was made up entirely of the player in question. Which, obviously is 
 # not the case. It is an interesting metric to compare players however.
+
+
+#####################################################################
+
+
+# Using Linear Weights approach
+lw_model <- lm()
+
+
+
+
+
+
 
 
 
