@@ -19,9 +19,7 @@ current_teams <- read.csv("MLB_teams.csv")
 head(team_stats)
 
 team_stats <- team_stats %>%
-  group_by(Team) %>%
-  summarise_if(is.numeric,sum) %>%
-  select(-c("Season")) %>%
+  filter(Season != 2020) %>%
   mutate(RC = ((H+BB+HBP)*TB)/(AB+BB+HBP),
          err = abs(RC-R))
 team_stats <- merge(team_stats, current_teams, by="Team")
@@ -37,9 +35,9 @@ avg_runs <- mean(team_stats$R)
 mad_rc <- mean(team_stats$err)
 perc_err <- mad_rc / avg_runs
 
-# On average this simple prediction is off by about 126.7 runs over the 10
-# year period. Since the average runs scored was 7408.8, our prediction
-# has an average error of only 1.7%.
+# On average this simple prediction is off by about 24.4 runs over the 10
+# year period. Since the average runs scored was 713.07, our prediction
+# has an average error of only 3.4%.
 
 # Plotting both results
 team_stats_plot <- team_stats %>%
@@ -98,7 +96,7 @@ player_stats <- player_stats %>%
 
 player_stats <- player_stats %>%
   mutate(Outs =  0.982*AB-H+GIDP+SF+SB+CS,
-         Games_used = Outs / 27,
+         Games_used = Outs / 26.72,
          RC_G = RC/Games_used)
 
 # Note: This stats indicates the number of runs we would expect a team to score
@@ -122,12 +120,30 @@ summary(lw_model)
 # We can see from the summary that a HR provides the most weight followed by
 # triple, double and single. As expected right? Now lets get projection.
 
+team_stats <- team_stats %>%
+  mutate(lw_RC = predict(lw_model),
+         lw_err = abs(lw_RC - R))
+lw_mad_rc <- mean(team_stats$lw_err)
+lw_perc_err <- lw_mad_rc / avg_runs
 
+# Here we see an average error of only 18.3 runs across the 10 year span! This
+# reduces are avg % error to only 2.5% as compared to 3.4% before!
 
+# To do this for players we will think about, for example, how many HRs a player
+# will hit per out and then we can extrapolate to get how many HRs a team of
+# of this player should hit per season. Then we can compare to our previous
+# prediction.
 
+lw_player_projections <- player_stats %>%
+  mutate(scale_factor = 4329 / Outs) %>%
+  select(-c(player_id, year, Age, SLG, OBP, OPS, AVG, R, K., BB., OBA))
 
+lw_player_projections[,seq(6, 19)] = lw_player_projections$scale_factor * 
+  lw_player_projections[,seq(6, 19)]
 
-
+lw_player_projections <- lw_player_projections %>%
+    mutate(lw_RC = predict(lw_model, newdata = .),
+           lw_RC_G = lw_RC / 162)
 
 
 
