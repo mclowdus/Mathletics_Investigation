@@ -12,7 +12,7 @@ setwd("/Users/maxclowdus/Desktop/R_Files/Mathletics")
 #####################################################################
 
 # First lets start by calculating the runs created (RC) for each MLB team
-# in the 2021 season using Bill James' original, simplest equation.
+# from 2011 to 2021 using Bill James' original, simplest equation.
 
 team_stats <- read.csv("11-21_team_stats.csv")
 current_teams <- read.csv("MLB_teams.csv")
@@ -26,18 +26,20 @@ team_stats <- team_stats %>%
          err = abs(RC-R))
 team_stats <- merge(team_stats, current_teams, by="Team")
 
-
-# Calculate mean absolute deviation for Runs Scored vs prediction
-mad_rc <- mean(team_stats$err)
-# On average this simple prediction is off by about 28.5 runs compared to the
-# actual runs scored. Since the average runs scored was 733.6, our prediction
-# has an average error of only 3.9%.
-
 # What is this complicated formula? Let's think of it like this: 
 # We are multiplying (H+BB+HBP+IBB) by TB / (AB+BB+IBB+HBP).This fraction is 
 # really a rate of bases per at bat. And we multiply this by total amount
 # of actual base runners, so it is ultimately # of base runners * rate
 # they are advanced. Pretty neat.
+
+# Calculate mean absolute deviation for Runs Scored vs prediction
+avg_runs <- mean(team_stats$R)
+mad_rc <- mean(team_stats$err)
+perc_err <- mad_rc / avg_runs
+
+# On average this simple prediction is off by about 126.7 runs over the 10
+# year period. Since the average runs scored was 7408.8, our prediction
+# has an average error of only 1.7%.
 
 # Plotting both results
 team_stats_plot <- team_stats %>%
@@ -57,7 +59,7 @@ ggplot(team_stats_plot, aes(x=reorder(Tm, value), y=value)) +
 #####################################################################
 
 
-# Using basic RC formula for players
+# Using basic RC formula for players in 2021
 
 # Now the discussion turns to evaluating players. How can we use this information
 # to determine the runs created by an individual player and how can we use this
@@ -72,7 +74,8 @@ player_stats <- player_stats %>%
                           "Arenado",
                           "Ohtani",
                           "Harper",
-                          "Ramirez")) %>%
+                          "Ramirez",
+                          "Guerrero Jr.")) %>%
   mutate(RC = ((H+BB+HBP)*TB)/(AB+BB+HBP) )
 
 # This RC value gives us the total number of runs created, using our formula,
@@ -81,7 +84,7 @@ player_stats <- player_stats %>%
 
 # To get RC/G we cannot just divide runs created by 162 because that would
 # not be an accurate representation of the players influence and impact on
-# games throughout the season. Sometime he hits more sometimes he hits less in
+# games throughout the season. Sometimes he hits more sometimes he hits less in
 # each game.
 
 # We can, however get the number of outs the player "consumed" during the season.
@@ -105,10 +108,20 @@ player_stats <- player_stats %>%
 
 #####################################################################
 
-head(team_stats)
+# Now lets use the linear weights apprach to create a regression model to 
+# project player and team RC and see how to compares to the previous basic 
+# RC approach.
+
 # Using Linear Weights approach
 lw_model <- lm(R ~ X1B+X2B+X3B+HR+BB+HBP+SB, data = team_stats)
 summary(lw_model)
+
+# Here we are creating a regression model to get how much value each offensive
+# result contributes to a run being scored (dependent variable).
+
+# We can see from the summary that a HR provides the most weight followed by
+# triple, double and single. As expected right? Now lets get projection.
+
 
 
 
