@@ -63,11 +63,11 @@ ggplot(team_stats_plot, aes(x=reorder(Tm, value), y=value)) +
 # to determine the runs created by an individual player and how can we use this
 # to compare players?
 
-player_stats <- read.csv("2021_batter_stats.csv")
-head(player_stats)
+player_stats_2021 <- read.csv("2021_batter_stats.csv")
+head(player_stats_2021)
 
 # Using the formula from above to get total runs created for specific players
-player_stats <- player_stats %>%
+player_stats_2021 <- player_stats_2021 %>%
   filter(last_name %in% c("Goldschmidt",
                           "Arenado",
                           "Ohtani",
@@ -94,7 +94,7 @@ player_stats <- player_stats %>%
 # an error. Then we add in additional outs which come from SB, SF, CS, and GIDP.
 # Lets get number of outs for each player:
 
-player_stats <- player_stats %>%
+player_stats_2021 <- player_stats_2021 %>%
   mutate(Outs =  0.982*AB-H+GIDP+SF+SB+CS,
          Games_used = Outs / 26.72,
          RC_G = RC/Games_used)
@@ -105,6 +105,8 @@ player_stats <- player_stats %>%
 
 
 #####################################################################
+
+# Linear Regression to predict Runs Created
 
 # Now lets use the linear weights apprach to create a regression model to 
 # project player and team RC and see how to compares to the previous basic 
@@ -134,7 +136,7 @@ lw_perc_err <- lw_mad_rc / avg_runs
 # of this player should hit per season. Then we can compare to our previous
 # prediction.
 
-lw_player_projections <- player_stats %>%
+lw_player_projections <- player_stats_2021 %>%
   mutate(scale_factor = 4329 / Outs) %>%
   select(-c(player_id, year, Age, SLG, OBP, OPS, AVG, R, K., BB., OBA))
 
@@ -145,8 +147,27 @@ lw_player_projections <- lw_player_projections %>%
     mutate(lw_RC = predict(lw_model, newdata = .),
            lw_RC_G = lw_RC / 162)
 
+# We can see that these values compare very well with our predictions using the
+# RC basic equation. And I want to note one thing here. Before, using the RC
+# method, we calculated the RC/G by dividing the RC value by number of games
+# worth of outs the player consumed and divided the RC by that value. While 
+# here, we figured out how many times a player did something per out created,
+# and multiplied that by a total season worth of outs. That way our data was set
+# up to use the model generated before, then we can divide by 162 to get per game.
 
+#################################################################
 
+# Runs Created Above Average
+
+# Although determining the number of runs a team made up of entirely one player
+# would score is interesting, this is not a real situation. Now lets compare 
+# these players against an average MLB team.
+
+player_stats_11_21 <- read.csv("11-21_batter_stats.csv")
+head(player_stats_11_21)
+
+player_stats_11_21 <- player_stats_11_21 %>%
+  select(-c(Rk, Age, Team, Lg, Player.additional, Pos, ))
 
 
 
