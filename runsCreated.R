@@ -95,7 +95,7 @@ player_stats_2021 <- player_stats_2021 %>%
 # Lets get number of outs for each player:
 
 player_stats_2021 <- player_stats_2021 %>%
-  mutate(Outs =  0.982*AB-H+GIDP+SF+SB+CS,
+  mutate(Outs =  0.982*AB-H+GIDP+SF+SH+CS,
          Games_used = Outs / 26.72,
          RC_G = RC/Games_used)
 
@@ -163,11 +163,40 @@ lw_player_projections <- lw_player_projections %>%
 # would score is interesting, this is not a real situation. Now lets compare 
 # these players against an average MLB team.
 
-player_stats_11_21 <- read.csv("11-21_batter_stats.csv")
-head(player_stats_11_21)
+# We will use the team_stats df created before to look at the average team over
+# the last 10 years (except 2020 because of course)
 
-player_stats_11_21 <- player_stats_11_21 %>%
-  select(-c(Rk, Age, Team, Lg, Player.additional, Pos, ))
+avg_team_summary <- team_stats %>%
+  summarise(AB = mean(AB),PA = mean(PA),H = mean(H),X1B = mean(X1B),
+            X2B = mean(X2B), X3B = mean(X3B), HR = mean(HR), K = mean(SO),
+            BB = mean(BB), TB = mean(TB),CS = mean(CS),SB = mean(SB),
+            GIDP = mean(GIDP),HBP = mean(HBP),SH = mean(SH),
+            SH = mean(SH),  SF = mean(SF)) %>%
+  mutate(Outs = 0.982* AB-H+GIDP+SF+SH+CS)
+
+# Now we have the statistics for an average team over this 10 year span, now
+# lets use Bryce Harper's stats from his 2021 MVP season. The teammult attribute
+# we are adding allows us to estimate what the average team would do in their
+# non-Harper PAs since Harper is now being inserted into the lineup.
+
+Harper21 <- player_stats_2021 %>%
+  filter(last_name == "Harper") %>%
+  select(-c(player_id, year, Age, SLG, OBP, OPS, AVG, R, K., BB., OBA, IBB)) %>%
+  mutate(teammult = (avg_team_summary$Outs - Outs) / avg_team_summary$Outs)
+
+# Multiply player's multiplier by average team stats
+avg_team_summary[nrow(avg_team_summary) + 1,] <- 
+  Harper21$teammult * avg_team_summary[1,]
+
+# Add player's stats to 
+avg_team_summary[nrow(avg_team_summary) + 1,] <- 
+  avg_team_summary[nrow(avg_team_summary),] + Harper21[1,c(3:18, 20)]
+
+# Use linear regression model to get runs scored
+Harper21 <- Harper21 %>%
+  mutate(RAA = predict(lw_model, newdata = avg_team_summary[3,]) - 
+           predict(lw_model, newdata = avg_team_summary[1,]))
+
 
 
 
