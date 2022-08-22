@@ -173,6 +173,7 @@ avg_team_summary <- team_stats %>%
             GIDP = mean(GIDP),HBP = mean(HBP),SH = mean(SH),
             SH = mean(SH),  SF = mean(SF)) %>%
   mutate(Outs = 0.982* AB-H+GIDP+SF+SH+CS)
+rownames(avg_team_summary) <- c("Average Team")
 
 # Now we have the statistics for an average team over this 10 year span, now
 # lets use Bryce Harper's stats from his 2021 MVP season. The teammult attribute
@@ -185,12 +186,12 @@ Harper21 <- player_stats_2021 %>%
   mutate(teammult = (avg_team_summary$Outs - Outs) / avg_team_summary$Outs)
 
 # Multiply player's multiplier by average team stats
-avg_team_summary[nrow(avg_team_summary) + 1,] <- 
+avg_team_summary["Average Team sans player",] <- 
   Harper21$teammult * avg_team_summary[1,]
 
 # Add player's stats to 
-avg_team_summary[nrow(avg_team_summary) + 1,] <- 
-  avg_team_summary[nrow(avg_team_summary),] + Harper21[1,c(3:18, 20)]
+avg_team_summary["Average Team plus player",] <- 
+  avg_team_summary["Average Team sans player",] + Harper21[1,c(3:18, 20)]
 
 # Use linear regression model to get runs scored
 Harper21 <- Harper21 %>%
